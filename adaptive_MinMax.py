@@ -27,7 +27,7 @@ class adaptive_MinMax:
         self.i = 0
         
         #variables used to compute the ordering quantity Q
-        self.fixed_cost = self.env.fixed_replenishment_cost
+        self.fixed_cost = self.env.fixed_cost
         self.carrying_charge = self.env.Ch / self.env.Co
         
         #Compute the fixed part of Q 

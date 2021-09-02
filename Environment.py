@@ -34,7 +34,7 @@ def generate_timeserie(param, length):
 
 class inventoryProductEnv(gym.Env):
     
-    def __init__(self, product_name, IL0, max_IL, ordering_cost, holding_cost, penalty, demand_param, lead_time_param, horizon):
+    def __init__(self, product_name, IL0, max_IL, fixed_cost, ordering_cost, holding_cost, penalty, demand_ts, lead_time_ts, horizon):
         
         # Initialize the state space and the action space
         
@@ -55,14 +55,14 @@ class inventoryProductEnv(gym.Env):
         self.Co = ordering_cost   # Ordering cost
         self.Ch = holding_cost    # Holding cost
         self.Cp = penalty         # Penalty
-        
-        
+        self.fixed_cost = fixed_cost
+                
         # Initialize the time-series parameters
         
-        self.demand_param = demand_param   # Parameter of the demand time serie
-        self.LT_param = lead_time_param    # Parameter of the lead time time serie
+        self.demand_ts = demand_ts   
+        self.LT_ts = lead_time_ts   
         
-        self.M = max_IL   # -> Maximum inventory level
+        self.max_IL = max_IL   # -> Maximum inventory level
         
         self.reset()   # reset the state vector
         self.seed()
@@ -76,132 +76,65 @@ class inventoryProductEnv(gym.Env):
     
     
     def reset(self):
-        
-        # Reset the state vector [InventoryLevel, InventoryTransition, Demand, Order, OnOrder]
-        
+        #reset the state vector : state = [inventory_level, inventory_transition, demand, ordering level, on-order]
         self.IL = self.IL0
         self.IT = 0
         self.Demand = 0
-        self.Order =  0
+        self.Order = 0
         self.OnOrder = 0
         self.state = self._get_observation()
-        
+         
+        #reset lead time
         self.lead_time = 0
-        
+         
+        #reset variables used 
         self.backlog = 0
-        self.round = 0
-        
         self.OnOrderList = []
-        
+               
+        #reset period
+        self.round = 0
+          
         return self._get_observation()
-        
-        
-    # Assume lead time and demand following a poisson distribution     
-        
-    def _generate_leadTime(self):
-        return nr.poisson(self.LT_param)   # generation of an observed lead time
-    
-    def _generate_demand(self):
-        return nr.poisson(self.demand_param) # generation of an observed demand
-    
-    
-    # Getting leadTime and demand from given time series
-    
-    def _get_leadTime(self, LT_ts, t):
-        return LT_ts[t]
-    
-    def _get_demand(self, demand_ts, t):
-        return demand_ts[t]
-    
-    
-    
-    def _OnOrder_update(self, lead_time, action):
-        
-        if len(self.OnOrderList) > lead_time :
-            self.OnOrderList[lead_time] += action
-           
+      
+    #get actual lead time and demand from generated time series
+    def _get_leadtime(self):
+        return self.LT_ts[self.round]
+      
+    def _get_demand(self):
+        return self.demand_ts[self.round]
+      
+    def _OnOrder_update(self, leadtime, action):
+        if len(self.OnOrderList) > leadtime:
+            self.OnOrderList[leadtime] += action
         else:
-            self.OnOrderList.extend([0]*(lead_time -len(self.OnOrderList)+1))
-            self.OnOrderList[lead_time] += action
-            
-    
-    
-    
-    # Get the current state vector: [InventoryLevel, InventoryTransition, Demand, Order, OnOrder] 
+            self.OnOrderList.extend([0]*int(leadtime - len(self.OnOrderList) + 1))
+            self.OnOrderList[leadtime] += action
+              
+    #get the current state vector
     def _get_observation(self):
         return (self.IL, self.IT, self.Demand, self.Order, self.OnOrder)
-    
-    
-    def _calculate_cost(self):
-        
-        return self.Co*self.Order + self.Ch*self.IL + self.Cp*self.backlog
-        
-    
-    
-    def step(self, action):
-        
-        self.round += 1
-        
-        self.Order = action
-        
-        self.lead_time = self._generate_leadTime()
-        
-        self._OnOrder_update(self.lead_time, self.Order)
-        
-        
-        self.IT = self.OnOrderList.pop(0)
-        
+          
+    def _calculate_cost(self): 
+        return self.fixed_cost + self.Co*self.Order + self.Ch*self.IL + self.Cp*self.backlog
+                
+    def step(self, action):  
+        self.round += 1        
+        self.Order = action        
+        self.lead_time = self._get_leadtime()        
+        self._OnOrder_update(self.lead_time, self.Order)                
+        self.IT = self.OnOrderList.pop(0)        
         self.OnOrder = sum(self.OnOrderList)
-        
-
-        self.Demand = self._generate_demand()
-        
-        
-        self.backlog = max(self.Demand - min(self.IL + self.IT, self.M), 0)
-               
-        self.IL = max(min(self.IL + self.IT, self.M) - self.Demand, 0)
-        
-        reward = -1*self._calculate_cost()
-        
-        done = self.round == self.horizon
-        
+        self.Demand = self._get_demand()        
+        self.backlog = max(self.Demand - min(self.IL + self.IT, self.max_IL), 0)               
+        self.IL = max(min(self.IL + self.IT, self.max_IL) - self.Demand, 0)       
+        reward = -1*self._calculate_cost()        
+        done = self.round == self.horizon        
         self.state = self._get_observation()
         
         return self.state, reward, done, {}
     
 
 
-if __name__ == "__main__":
-    
-    product_name = "pump"
-    IL0 = 20
-    max_IL = 400 
-    ordering_cost = 10 
-    holding_cost = 2
-    penalty = 50
-    demand_param = 6 
-    lead_time_param = 2 
-    horizon = 100
-    
-    env = inventoryProductEnv(product_name, IL0, max_IL, ordering_cost, holding_cost, penalty, demand_param, lead_time_param, horizon)
-    
-    
-    """
-    print(env.state)
-    
-    for i in range(50):
-     
-        action = random.randint(1,20)
-        print(env.step(action))
-        print(env.lead_time)
-    """
-
-    n_episodes = 2000
-
-    scores, _ = dqn(n_episodes, env)
-
-            
-        
     
     
     

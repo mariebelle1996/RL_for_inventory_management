@@ -16,6 +16,7 @@ max_IL = 70
 ordering_cost = 10 
 holding_cost = 2
 penalty = 50
+fixed_cost = 68
 
 #demand and lead time parameters
 demand_param = 7
@@ -37,15 +38,16 @@ linewidth = 2
 x = np.arange(0, 50, 0.5)
 demand_distribution = poisson_distribution(x, demand_param, loc = 0)
 
-for lead_time_param in list_lead_time_param:
-    
+#for lead_time_param in list_lead_time_param:
+for lead_time_param in list_lead_time_param:    
+
     #lead time poisson distribution
     LT_distribution = poisson_distribution(x, lead_time_param, loc = 0)
     
     #generate lead time and demand time series
-    LT_ts =  generate_timeserie(lead_time_param, horizon)
-    demand_ts =  generate_timeserie(demand_param, horizon)
-    env = inventoryProductEnv(product_name, IL0, max_IL, ordering_cost, holding_cost, penalty, LT_ts, demand_ts, horizon)
+    LT_ts =  generate_timeserie(lead_time_param, horizon+1)
+    demand_ts =  generate_timeserie(demand_param, horizon+1)
+    env = inventoryProductEnv(product_name, IL0, max_IL, fixed_cost, ordering_cost, holding_cost, penalty, LT_ts, demand_ts, horizon)
 
     #Lists used for plotting
     list_s = np.array([])
