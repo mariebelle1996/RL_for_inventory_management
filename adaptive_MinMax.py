@@ -31,7 +31,7 @@ class adaptive_MinMax:
         self.carrying_charge = self.env.Ch / self.env.Co
         
         #Compute the fixed part of Q 
-        self.Q_fixed = (2*self.fixed_cost / self.env.Co*self.carrying_charge)
+        self.Q_fixed = (2*self.fixed_cost / self.env.Co*self.carrying_charge)**0.5
         
     def step(self):
         
@@ -41,7 +41,7 @@ class adaptive_MinMax:
         elif(self.i == 0):
             self.lead_time = self.env.lead_time
             #action = self.env.max_IL
-            action = self.Q_fixed*(self.env.Demand)
+            action = self.Q_fixed*(self.env.Demand**0.5)
             self.i = 1
         elif(self.i == 1):
             if self.lead_time >= 0:
