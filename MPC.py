@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 import numpy.random as nr
-from non_stationary_env import inventoryProductEnv
+from Environment import *
 import heapq
 
 

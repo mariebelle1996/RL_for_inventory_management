@@ -2,12 +2,12 @@
 """
 Created on Tue Aug 10 08:55:02 2021
 
-@author: ELIE
+@author: Marie-Belle BADR
 """
 from adaptive_MinMax import *
 from MinMax import *
 from Environment import *
-from MPC import *
+from MPC import ModelPredictiveControl
 
 #inventory product parameters
 product_name = "pump"
@@ -29,7 +29,7 @@ min_default_order = int(maximum - minimum)
 
 #training parameters
 horizon = 200
-n_episodes = 2000
+n_episodes = 200
 
 #Plotting parameters
 linewidth = 2
@@ -89,7 +89,7 @@ for lead_time_param in list_lead_time_param:
     #Launch DQN
     scores_dqn, action_list, backlog = dqn(n_episodes, env)
     backlog_RL = sum(backlog)
-    backlog_RL = backlog_RL*np.ones(episodes)
+    backlog_RL = backlog_RL*np.ones(n_episodes)
 
     #Launch MPC
     np.random.seed(4)
